@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Deviation">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f5f4f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1c1c1a" media="(prefers-color-scheme: dark)">
+<title>Deviation Anchor Calculator</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff; --bg2: #f5f4f0; --bg3: #eeede9;
+  --text: #1a1a18; --text2: #5f5e5a; --text3: #888780;
+  --border: rgba(0,0,0,0.11); --border2: rgba(0,0,0,0.20);
+  --green: #3b6d11; --amber: #854f0b; --red: #a32d2d; --blue: #185fa5;
+  --green-bg: #eaf3de; --green-text: #27500a;
+  --amber-bg: #faeeda; --amber-text: #633806;
+  --red-bg:   #fcebeb; --red-text:   #7a1f1f;
+  --blue-bg:  #e6f1fb; --blue-text:  #0c447c;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1a; --bg2: #252523; --bg3: #2e2e2b;
+    --text: #e8e6df; --text2: #9c9a92; --text3: #6b6a64;
+    --border: rgba(255,255,255,0.10); --border2: rgba(255,255,255,0.20);
+    --green: #639922; --amber: #ba7517; --red: #e24b4a; --blue: #378add;
+    --green-bg: #173404; --green-text: #c0dd97;
+    --amber-bg: #412402; --amber-text: #fac775;
+    --red-bg:   #501313; --red-text:   #f7c1c1;
+    --blue-bg:  #042c53; --blue-text:  #b5d4f4;
+  }
+}
+body { font-family: system-ui,-apple-system,sans-serif; background: var(--bg); color: var(--text); padding: 16px; max-width: 560px; margin: 0 auto; -webkit-text-size-adjust: 100%; }
+h1 { font-size: 19px; font-weight: 500; margin-bottom: 2px; }
+.sub { font-size: 12px; color: var(--text2); margin-bottom: 16px; line-height: 1.5; }
+.sec { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text3); margin: 16px 0 7px; }
+
+/* Mode toggle */
+.mode-wrap { display: flex; gap: 6px; margin-bottom: 14px; }
+.mbtn { flex: 1; padding: 9px 6px; border-radius: 8px; font-size: 11px; font-weight: 500; border: 1px solid var(--border2); background: var(--bg2); color: var(--text2); cursor: pointer; font-family: inherit; text-align: center; line-height: 1.4; }
+.mbtn.act { background: var(--bg); color: var(--text); box-shadow: 0 0 0 2px var(--blue); border-color: var(--blue); }
+
+/* Inputs */
+.inputs { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 14px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+@media (max-width: 500px) { .inputs { grid-template-columns: 1fr 1fr; } }
+.field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 5px; }
+.field input { display: block; width: 100%; font-size: 18px; font-weight: 500; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border2); background: var(--bg); color: var(--text); font-family: inherit; -webkit-appearance: none; appearance: none; }
+.field input:focus { outline: none; box-shadow: 0 0 0 2px var(--blue); }
+.field input.solved { background: var(--bg2); color: var(--blue); border-color: var(--border); pointer-events: none; font-weight: 600; }
+.field label.solved { color: var(--blue); font-weight: 500; }
+.hint { font-size: 11px; color: var(--text3); margin-top: 3px; }
+.hint.solved { color: var(--blue); opacity: 0.7; }
+
+/* Warning */
+.warn { border-radius: 10px; padding: 11px 14px; font-size: 13px; font-weight: 500; line-height: 1.6; margin-bottom: 12px; border: 1px solid; display: none; }
+.wr { background: var(--red-bg);   color: var(--red-text);   border-color: var(--red); }
+.wa { background: var(--amber-bg); color: var(--amber-text); border-color: var(--amber); }
+
+/* Diagram */
+.diagram-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin-bottom: 14px; }
+canvas { display: block; width: 100%; }
+
+/* Big results */
+.big3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.bcard { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 11px 8px; text-align: center; }
+.blabel { font-size: 10px; color: var(--text3); margin-bottom: 3px; }
+.bnum { font-size: 22px; font-weight: 600; line-height: 1.05; }
+.bunit { font-size: 10px; color: var(--text2); margin-top: 3px; }
+.cg { color: var(--green); } .cw { color: var(--amber); } .cr { color: var(--red); }
+
+/* Banner */
+.banner { border-radius: 10px; padding: 11px 14px; font-size: 13px; font-weight: 600; text-align: center; line-height: 1.5; margin-bottom: 14px; border: 1px solid; }
+.bok  { background: var(--green-bg); color: var(--green-text); border-color: var(--green); }
+.bwn  { background: var(--amber-bg); color: var(--amber-text); border-color: var(--amber); }
+.bfl  { background: var(--red-bg);   color: var(--red-text);   border-color: var(--red); }
+
+/* Breakdown */
+.breakdown { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 4px 14px; margin-bottom: 14px; }
+.row { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--border); gap: 10px; font-size: 13px; }
+.row:last-child { border-bottom: none; }
+.rl { color: var(--text2); flex: 1; line-height: 1.4; }
+.rv { font-weight: 600; font-family: ui-monospace,monospace; font-size: 12px; text-align: right; flex-shrink: 0; }
+
+.note { font-size: 11px; color: var(--text3); line-height: 1.7; padding-top: 10px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<h1>Deviation Anchor Calculator</h1>
+<p class="sub">Rope slides freely through deviation — 0° = vertical &nbsp;·&nbsp; Limit: ≤ 20° or ≤ 6 ft offset</p>
+
+<div class="sec">Solve for</div>
+<div class="mode-wrap">
+  <button class="mbtn act" id="mA" onclick="setMode('angle')">Offset + force<br><span style="font-weight:400">know angle</span></button>
+  <button class="mbtn"     id="mO" onclick="setMode('offset')">Angle + force<br><span style="font-weight:400">know offset</span></button>
+  <button class="mbtn"     id="mF" onclick="setMode('force')">Angle + offset<br><span style="font-weight:400">know dev force</span></button>
+</div>
+
+<div class="sec">Inputs</div>
+<div class="inputs">
+  <div class="field">
+    <label for="iW">Load (lbs)</label>
+    <input type="number" id="iW" value="250" min="1" step="10" inputmode="numeric">
+    <div class="hint">worker weight</div>
+  </div>
+  <div class="field">
+    <label for="iV">Drop to dev (ft)</label>
+    <input type="number" id="iV" value="10" min="0.5" step="0.5" inputmode="decimal">
+    <div class="hint">anchor to deviation</div>
+  </div>
+  <div class="field">
+    <label for="iA" id="lA">Angle (°)</label>
+    <input type="number" id="iA" value="15" min="0" max="90" step="1" inputmode="numeric">
+    <div class="hint" id="hA">from vertical</div>
+  </div>
+  <div class="field">
+    <label for="iO" id="lO">Offset (ft)</label>
+    <input type="number" id="iO" value="" min="0" step="0.5" inputmode="decimal" placeholder="—">
+    <div class="hint" id="hO">horiz. distance</div>
+  </div>
+  <div class="field">
+    <label for="iF" id="lF">Dev force (lbs)</label>
+    <input type="number" id="iF" value="" min="0" step="1" inputmode="numeric" placeholder="—">
+    <div class="hint" id="hF">on anchor</div>
+  </div>
+</div>
+
+<div class="warn" id="xwarn"></div>
+
+<div class="sec">Diagram</div>
+<div class="diagram-wrap"><canvas id="xc"></canvas></div>
+
+<div class="big3">
+  <div class="bcard"><div class="blabel">Deflection angle</div><div class="bnum" id="xang">—</div><div class="bunit">° from vertical</div></div>
+  <div class="bcard"><div class="blabel">Dev anchor force</div><div class="bnum" id="xforce">—</div><div class="bunit">lbs</div></div>
+  <div class="bcard"><div class="blabel">% of load</div><div class="bnum" id="xpct">—</div><div class="bunit">on deviation</div></div>
+</div>
+
+<div class="banner bok" id="xbn">—</div>
+
+<div class="sec">Force breakdown</div>
+<div class="breakdown">
+  <div class="row"><span class="rl">Deflection angle from vertical</span><span class="rv" id="dang">—</span></div>
+  <div class="row"><span class="rl">Horizontal offset at given drop</span><span class="rv" id="doff">—</span></div>
+  <div class="row"><span class="rl">Rope tension (= load weight)</span><span class="rv" id="dtens">—</span></div>
+  <div class="row"><span class="rl">Deviation anchor force  F = T × sin(θ)</span><span class="rv" id="dforce">—</span></div>
+  <div class="row"><span class="rl">Force as % of load</span><span class="rv" id="dpct">—</span></div>
+  <div class="row"><span class="rl">Angle limit check (≤ 20°)</span><span class="rv" id="dangle_chk">—</span></div>
+  <div class="row"><span class="rl">Offset limit check (≤ 6 ft)</span><span class="rv" id="doffset_chk">—</span></div>
+</div>
+
+<p class="note">
+  Rope slides freely through deviation carabiner/pulley — tension is equal on both sides.
+  Drop = vertical distance from main anchor to deviation anchor point.<br>
+  Deviation force F = T × sin(θ) where θ = angle from vertical, T = load weight.<br>
+  Deviations are low-force anchors — at 20° the deviation sees only ~34% of the load.<br>
+  Limits per SPRAT/industry practice: deflection ≤ 20° from vertical AND horizontal offset ≤ 6 ft.<br>
+  Does not account for rope friction through carabiner. Static load only.<br>
+  All life safety systems must be approved by qualified personnel per applicable standards.
+</p>
+
+<script>
+(function(){
+  var mode = "angle";
+
+  window.setMode = function(m){ setMode(m); };
+
+  function setMode(m){
+    mode = m;
+    document.getElementById("mA").className = "mbtn" + (m==="angle"?" act":"");
+    document.getElementById("mO").className = "mbtn" + (m==="offset"?" act":"");
+    document.getElementById("mF").className = "mbtn" + (m==="force"?" act":"");
+
+    var cfg = { iA: m==="angle", iO: m==="offset", iF: m==="force" };
+    var lbls = { iA:"lA", iO:"lO", iF:"lF" };
+    var hnts = { iA:"hA", iO:"hO", iF:"hF" };
+    Object.keys(cfg).forEach(function(id){
+      var el=document.getElementById(id);
+      var lel=document.getElementById(lbls[id]);
+      var hel=document.getElementById(hnts[id]);
+      if(!el) return;
+      if(cfg[id]){
+        el.className=""; el.removeAttribute("readonly");
+        if(lel) lel.className="";
+        if(hel) hel.className="hint";
+      } else {
+        el.className="solved"; el.setAttribute("readonly","");
+        if(lel) lel.className="solved";
+        if(hel) hel.className="hint solved";
+      }
+    });
+    go();
+  }
+
+  function st(id,v){ var e=document.getElementById(id); if(e) e.textContent=String(v); }
+  function sc(id,c){ var e=document.getElementById(id); if(e) e.className=c; }
+
+  // Distance from anchor to deviation — used for diagram scaling
+  // We assume a nominal vertical drop for the diagram
+  // User inputs: load, angle (or offset or force)
+  // We need a vertical distance for the diagram — use a nominal value or derive from offset
+
+  function go(){
+    var W    = parseFloat(document.getElementById("iW").value)||250;
+    var drop = parseFloat(document.getElementById("iV").value)||10;
+    if(W<=0) W=250; if(drop<=0) drop=0.5;
+
+    var angleDeg, offsetFt, devForce, angleRad;
+
+    if(mode==="angle"){
+      angleDeg = parseFloat(document.getElementById("iA").value)||15;
+      if(angleDeg<0) angleDeg=0; if(angleDeg>89) angleDeg=89;
+      angleRad = angleDeg*Math.PI/180;
+      offsetFt = drop*Math.tan(angleRad);
+      devForce = W*Math.sin(angleRad);
+    } else if(mode==="offset"){
+      offsetFt = parseFloat(document.getElementById("iO").value)||3;
+      if(offsetFt<0) offsetFt=0;
+      angleRad = Math.atan(offsetFt/drop);
+      angleDeg = angleRad*180/Math.PI;
+      devForce = W*Math.sin(angleRad);
+    } else {
+      devForce = parseFloat(document.getElementById("iF").value)||86;
+      if(devForce<0) devForce=0;
+      if(devForce>=W) devForce=W*0.999;
+      angleRad = Math.asin(devForce/W);
+      angleDeg = angleRad*180/Math.PI;
+      offsetFt = drop*Math.tan(angleRad);
+    }
+
+    // Recompute consistently
+    angleRad = angleDeg*Math.PI/180;
+    devForce = W*Math.sin(angleRad);
+    offsetFt = drop*Math.tan(angleRad);
+    var pct  = devForce/W*100;
+
+    // Update solved fields live
+    if(mode!=="angle"){  var eA=document.getElementById("iA"); if(eA) eA.value=angleDeg.toFixed(1); }
+    if(mode!=="offset"){ var eO=document.getElementById("iO"); if(eO) eO.value=offsetFt.toFixed(2); }
+    if(mode!=="force"){  var eF=document.getElementById("iF"); if(eF) eF.value=Math.round(devForce); }
+
+    // Limit checks
+    var angleOK  = angleDeg<=20;
+    var offsetOK = offsetFt<=6;
+
+    // Warning
+    var we=document.getElementById("xwarn");
+    if(angleDeg>20){
+      we.className="warn wr"; we.style.display="block";
+      we.textContent="EXCEEDS LIMIT: "+angleDeg.toFixed(1)+"° is beyond the 20° maximum. Reposition deviation closer to plumb.";
+    } else if(offsetFt>6){
+      we.className="warn wa"; we.style.display="block";
+      we.textContent="Caution: "+offsetFt.toFixed(2)+" ft offset exceeds the 6 ft maximum at "+drop+" ft vertical drop.";
+    } else if(angleDeg>15){
+      we.className="warn wa"; we.style.display="block";
+      we.textContent="Approaching limit: "+angleDeg.toFixed(1)+"° — within range, monitor offset at actual rigging depth.";
+    } else {
+      we.style.display="none";
+    }
+
+    // Big 3
+    var ac=angleDeg<=15?"bnum cg":angleDeg<=20?"bnum cw":"bnum cr";
+    var fc=(angleOK&&offsetOK)?"bnum cg":angleOK?"bnum cw":"bnum cr";
+    var pc=pct<=25?"bnum cg":pct<=34?"bnum cw":"bnum cr";
+    sc("xang",ac);   st("xang",   angleDeg.toFixed(1)+"°");
+    sc("xforce",fc); st("xforce", Math.round(devForce));
+    sc("xpct",pc);   st("xpct",   pct.toFixed(1)+"%");
+
+    // Banner
+    var bn=document.getElementById("xbn");
+    if(angleDeg>20){
+      bn.className="banner bfl";
+      bn.textContent="EXCEEDS 20° LIMIT — reposition deviation anchor";
+    } else if(angleDeg>15||offsetFt>6){
+      bn.className="banner bwn";
+      bn.textContent=Math.round(devForce)+" lbs on deviation — approaching limits";
+    } else {
+      bn.className="banner bok";
+      bn.textContent=Math.round(devForce)+" lbs on deviation anchor — within limits";
+    }
+
+    // Breakdown
+    st("dang",   angleDeg.toFixed(2)+"° from vertical");
+    st("doff",   offsetFt.toFixed(2)+" ft  at "+drop+" ft drop");
+    st("dtens",  Math.round(W)+" lbs  (rope tension = load)");
+    st("dforce", Math.round(devForce)+" lbs");
+    st("dpct",   pct.toFixed(1)+"% of load");
+    st("dangle_chk",  angleDeg<=20 ? angleDeg.toFixed(1)+"° ≤ 20° ✓" : angleDeg.toFixed(1)+"° EXCEEDS 20° ✗");
+    document.getElementById("dangle_chk").style.color = angleDeg<=20?"var(--green)":"var(--red)";
+    st("doffset_chk", offsetFt<=6 ? offsetFt.toFixed(2)+" ft ≤ 6 ft ✓" : offsetFt.toFixed(2)+" ft EXCEEDS 6 ft ✗");
+    document.getElementById("doffset_chk").style.color = offsetFt<=6?"var(--green)":"var(--red)";
+
+    draw(angleDeg, W, devForce, offsetFt, drop);
+  }
+
+  function draw(angleDeg, W, devForce, offsetFt, drop){
+    var cv  = document.getElementById("xc");
+    var CW  = cv.parentElement.clientWidth - 20;
+    if(CW<100) CW=300;
+    var CH  = Math.max(340, Math.min(500, Math.round(CW*0.90)));
+    var dpr = Math.min(window.devicePixelRatio||1,3);
+    cv.width=CW*dpr; cv.height=CH*dpr;
+    cv.style.width=CW+"px"; cv.style.height=CH+"px";
+    var ctx=cv.getContext("2d");
+    ctx.scale(dpr,dpr);
+
+    var dk=window.matchMedia("(prefers-color-scheme:dark)").matches;
+    var rope  = dk?"#b4b2a9":"#3d3d3a";
+    var anc   = dk?"#378add":"#185fa5";
+    var load  = dk?"#ba7517":"#854f0b";
+    var force = dk?"#e24b4a":"#a32d2d";
+    var devC  = dk?"#639922":"#3b6d11";
+    var dim   = dk?"#6b6a64":"#888780";
+    var lbl   = dk?"#c2c0b6":"#3d3d3a";
+
+    ctx.clearRect(0,0,CW,CH);
+    var fs=CW<340?10:11;
+    var fnt=fs+"px system-ui,-apple-system,sans-serif";
+
+    // Layout
+    // Main anchor top-center, plumb line down, deviation offset to right
+    // Load hangs VERTICALLY below deviation point
+    //
+    // Total vertical to show: drop (anchor to deviation) + some below
+    // We show drop + 0.6*drop below deviation for the load rope
+    var totalShowFt = drop + drop*0.6;
+    var topPad = 52, botPad = 52;
+    var pxPerFt = (CH - topPad - botPad) / totalShowFt;
+
+    // Anchor position — left of center to give room for offset to right
+    var ancX  = CW * 0.35;
+    var ancY  = topPad;
+    var plumbX = ancX;  // plumb line x
+
+    // Deviation position
+    var devVertPx  = drop * pxPerFt;
+    var devHorizPx = offsetFt * pxPerFt;
+    var devX = plumbX + devHorizPx;
+    var devY = ancY + devVertPx;
+    devX = Math.min(devX, CW - 36);
+
+    // Load hangs STRAIGHT DOWN from deviation (plumb below deviation)
+    var loadX = devX;   // directly below deviation
+    var loadY = devY + drop*0.6*pxPerFt;
+    loadY = Math.min(loadY, CH - botPad);
+
+    // Plumb reference line (dashed vertical from anchor straight down)
+    ctx.strokeStyle=dim; ctx.lineWidth=0.8; ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(plumbX, ancY); ctx.lineTo(plumbX, CH-30); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font=(fs-1)+"px system-ui,-apple-system,sans-serif";
+    ctx.fillStyle=dim; ctx.textAlign="left";
+    ctx.fillText("plumb",plumbX+3,ancY+14);
+
+    // Rope: anchor → deviation (angled)
+    ctx.strokeStyle=rope; ctx.lineWidth=2.5; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(ancX,ancY); ctx.lineTo(devX,devY); ctx.stroke();
+
+    // Rope: deviation → load (straight down — plumb below deviation)
+    ctx.beginPath(); ctx.moveTo(devX,devY); ctx.lineTo(loadX,loadY); ctx.stroke();
+
+    // Main anchor
+    ctx.fillStyle=anc;
+    ctx.beginPath(); ctx.arc(ancX,ancY,7,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle=dim; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(ancX-20,ancY-8); ctx.lineTo(ancX+20,ancY-8); ctx.stroke();
+    for(var i=-18;i<=18;i+=8){
+      ctx.beginPath(); ctx.moveTo(ancX+i,ancY-8); ctx.lineTo(ancX+i+6,ancY-15); ctx.stroke();
+    }
+    ctx.font=fnt; ctx.fillStyle=lbl; ctx.textAlign="center";
+    ctx.fillText("Main anchor",ancX,ancY-20);
+
+    // Drop dimension line (left side)
+    var dimX = plumbX - 18;
+    ctx.strokeStyle=dim; ctx.lineWidth=0.7; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(dimX,ancY); ctx.lineTo(dimX,devY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(dimX-5,ancY); ctx.lineTo(dimX+5,ancY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(dimX-5,devY); ctx.lineTo(dimX+5,devY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=dim; ctx.font=(fs-1)+"px system-ui,-apple-system,sans-serif"; ctx.textAlign="right";
+    ctx.fillText(drop+" ft",dimX-6,(ancY+devY)/2+4);
+
+    // Deviation anchor
+    ctx.fillStyle=devC;
+    ctx.beginPath(); ctx.arc(devX,devY,7,0,Math.PI*2); ctx.fill();
+    var devLabelX = devX+12;
+    if(devLabelX > CW-70) devLabelX = devX-12;
+    var devAlign = devLabelX > devX ? "left" : "right";
+    ctx.font=fnt; ctx.fillStyle=devC; ctx.textAlign=devAlign;
+    ctx.fillText("Deviation",devLabelX,devY-5);
+    ctx.font=(fs-1)+"px system-ui,-apple-system,sans-serif";
+    ctx.fillText(Math.round(devForce)+" lbs",devLabelX,devY+9);
+
+    // Force arrow at deviation — points LEFT (toward plumb) showing lateral pull
+    var arrLen = Math.max(10, Math.min(45, devHorizPx*0.55));
+    ctx.strokeStyle=force; ctx.fillStyle=force; ctx.lineWidth=1.8;
+    ctx.beginPath(); ctx.moveTo(devX,devY); ctx.lineTo(devX-arrLen,devY); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(devX-arrLen,devY);
+    ctx.lineTo(devX-arrLen+9,devY-5);
+    ctx.lineTo(devX-arrLen+9,devY+5);
+    ctx.closePath(); ctx.fill();
+    ctx.font="bold "+(fs-1)+"px system-ui,-apple-system,sans-serif";
+    ctx.fillStyle=force; ctx.textAlign="right";
+    ctx.fillText("F="+Math.round(devForce)+"lb",devX-arrLen-3,devY-5);
+
+    // Load (hangs plumb below deviation)
+    ctx.strokeStyle=load; ctx.fillStyle=load; ctx.lineWidth=1.5;
+    ctx.beginPath();
+    ctx.moveTo(loadX,loadY);
+    ctx.lineTo(loadX-11,loadY+16);
+    ctx.lineTo(loadX+11,loadY+16);
+    ctx.closePath(); ctx.stroke();
+    ctx.font=fnt; ctx.fillStyle=load; ctx.textAlign="center";
+    ctx.fillText("W="+W+"lbs",loadX,loadY+30);
+
+    // Angle arc at anchor between plumb (down) and angled rope
+    var arcR = Math.min(38, devVertPx*0.35);
+    var ropeDir = Math.atan2(devY-ancY, devX-ancX); // direction anchor→deviation
+    // Plumb = straight down = π/2
+    ctx.strokeStyle=anc; ctx.lineWidth=1.8;
+    ctx.beginPath(); ctx.arc(ancX,ancY,arcR, Math.PI/2, ropeDir, false); ctx.stroke();
+    // Label in the arc
+    var midArc = (Math.PI/2 + ropeDir)/2;
+    ctx.font="bold "+fnt; ctx.fillStyle=anc; ctx.textAlign="left";
+    ctx.fillText(angleDeg.toFixed(1)+"°", ancX+(arcR+5)*Math.cos(midArc), ancY+(arcR+5)*Math.sin(midArc)+4);
+
+    // Horizontal offset dimension line below deviation
+    if(devHorizPx>10){
+      var dimY2 = devY+26;
+      ctx.strokeStyle=dim; ctx.lineWidth=0.7; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(plumbX,dimY2); ctx.lineTo(devX,dimY2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(plumbX,dimY2-6); ctx.lineTo(plumbX,dimY2+6); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(devX,dimY2-6); ctx.lineTo(devX,dimY2+6); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle=dim; ctx.font=(fs-1)+"px system-ui,-apple-system,sans-serif"; ctx.textAlign="center";
+      ctx.fillText(offsetFt.toFixed(1)+" ft",(plumbX+devX)/2,dimY2+13);
+    }
+  }
+
+  var ids=["iW","iV","iA","iO","iF"];
+  var evs=["input","change","keyup","blur"];
+  ids.forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) evs.forEach(function(ev){ el.addEventListener(ev,go); });
+  });
+
+  var rt;
+  window.addEventListener("resize",function(){ clearTimeout(rt); rt=setTimeout(go,80); });
+
+  setMode("angle");
+  setTimeout(go,120);
+}());
+</script>
+</body>
+</html>
